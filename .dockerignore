@@ -1,0 +1,9 @@
+.git
+*.env
+bin/
+obj/
+.vs/
+*.user
+*.suo
+docker-compose.yml
+.claude/
