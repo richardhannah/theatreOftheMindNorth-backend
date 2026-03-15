@@ -47,6 +47,20 @@ public class LoginService : ILoginService
         return new LoginResponse { Token = token, Username = login.Username };
     }
 
+    public async Task<bool> LogoutAsync(LoginDto dto)
+    {
+        var existing = await _repository.GetByUsernameAsync(dto.Username);
+        if (existing == null)
+            return false;
+
+        var hashedAttempt = HashPassword(dto.Password, existing.Salt);
+        if (hashedAttempt != existing.Password)
+            return false;
+
+        await _repository.UpdateTokenAsync(existing.UserId, Guid.Empty);
+        return true;
+    }
+
     private static string GenerateSalt()
     {
         var saltBytes = RandomNumberGenerator.GetBytes(32);

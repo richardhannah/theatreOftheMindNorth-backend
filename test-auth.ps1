@@ -58,4 +58,36 @@ try {
     Write-Host "Got $status as expected" -ForegroundColor Green
 }
 
+# Logout
+Write-Host "`n--- POST /api/login (logout) ---" -ForegroundColor Yellow
+$logoutBody = @{ username = $username; password = $password; action = "logout" } | ConvertTo-Json
+$logoutResponse = Invoke-RestMethod -Uri "$baseUrl/api/login" -Method Post -Body $logoutBody -ContentType "application/json"
+Write-Host "Response: $($logoutResponse | ConvertTo-Json)" -ForegroundColor Green
+
+# Token should be invalid after logout
+Write-Host "`n--- GET /api/hello (after logout - expect 401) ---" -ForegroundColor Yellow
+try {
+    Invoke-RestMethod -Uri "$baseUrl/api/hello" -Method Get -Headers @{ Authorization = "Bearer $token2" }
+    Write-Host "ERROR: Token should be invalid after logout!" -ForegroundColor Red
+} catch {
+    $status = $_.Exception.Response.StatusCode.value__
+    Write-Host "Got $status as expected (logged out)" -ForegroundColor Green
+}
+
+# Logout with wrong password
+Write-Host "`n--- POST /api/login (logout with wrong password - expect 401) ---" -ForegroundColor Yellow
+$badLogoutBody = @{ username = $username; password = "wrongpass"; action = "logout" } | ConvertTo-Json
+try {
+    Invoke-RestMethod -Uri "$baseUrl/api/login" -Method Post -Body $badLogoutBody -ContentType "application/json"
+    Write-Host "ERROR: Should have returned 401!" -ForegroundColor Red
+} catch {
+    $status = $_.Exception.Response.StatusCode.value__
+    Write-Host "Got $status as expected" -ForegroundColor Green
+}
+
+# Can still login again after logout
+Write-Host "`n--- POST /api/login (login again after logout) ---" -ForegroundColor Yellow
+$loginResponse3 = Invoke-RestMethod -Uri "$baseUrl/api/login" -Method Post -Body $loginBody -ContentType "application/json"
+Write-Host "Response: $($loginResponse3 | ConvertTo-Json)" -ForegroundColor Green
+
 Write-Host "`n=== All tests passed ===" -ForegroundColor Cyan
