@@ -12,7 +12,8 @@ public class HelloController : ControllerBase
     [TokenAuth]
     public IActionResult Get()
     {
-        var user = (Login)HttpContext.Items["User"]!;
-        return Ok(new { message = $"Hello, {user.Username}!" });
+        var login = (Login)HttpContext.Items["Login"]!;
+        var user = (User)HttpContext.Items["User"]!;
+        return Ok(new { message = $"Hello, {login.Username}!", role = user.Role.ToString() });
     }
 }

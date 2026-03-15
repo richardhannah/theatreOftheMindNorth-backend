@@ -6,16 +6,18 @@ namespace TheatreOfTheMind.Services;
 
 public class LoginService : ILoginService
 {
-    private readonly ILoginRepository _repository;
+    private readonly ILoginRepository _loginRepository;
+    private readonly IUserRepository _userRepository;
 
-    public LoginService(ILoginRepository repository)
+    public LoginService(ILoginRepository loginRepository, IUserRepository userRepository)
     {
-        _repository = repository;
+        _loginRepository = loginRepository;
+        _userRepository = userRepository;
     }
 
     public async Task<LoginResponse?> LoginOrRegisterAsync(LoginDto dto)
     {
-        var existing = await _repository.GetByUsernameAsync(dto.Username);
+        var existing = await _loginRepository.GetByUsernameAsync(dto.Username);
 
         if (existing != null)
         {
@@ -24,9 +26,16 @@ public class LoginService : ILoginService
                 return null;
 
             var newToken = Guid.NewGuid();
-            await _repository.UpdateTokenAsync(existing.UserId, newToken);
+            await _loginRepository.UpdateTokenAsync(existing.UserId, newToken);
 
-            return new LoginResponse { Token = newToken, Username = existing.Username };
+            var user = await _userRepository.GetByUserIdAsync(existing.UserId);
+
+            return new LoginResponse
+            {
+                Token = newToken,
+                Username = existing.Username,
+                Role = (user?.Role ?? UserRole.User).ToString()
+            };
         }
 
         var salt = GenerateSalt();
@@ -42,14 +51,27 @@ public class LoginService : ILoginService
             Token = token
         };
 
-        await _repository.CreateAsync(login);
+        await _loginRepository.CreateAsync(login);
 
-        return new LoginResponse { Token = token, Username = login.Username };
+        var newUser = new User
+        {
+            UserId = login.UserId,
+            Role = UserRole.User
+        };
+
+        await _userRepository.CreateAsync(newUser);
+
+        return new LoginResponse
+        {
+            Token = token,
+            Username = login.Username,
+            Role = newUser.Role.ToString()
+        };
     }
 
     public async Task<bool> LogoutAsync(LoginDto dto)
     {
-        var existing = await _repository.GetByUsernameAsync(dto.Username);
+        var existing = await _loginRepository.GetByUsernameAsync(dto.Username);
         if (existing == null)
             return false;
 
@@ -57,7 +79,7 @@ public class LoginService : ILoginService
         if (hashedAttempt != existing.Password)
             return false;
 
-        await _repository.UpdateTokenAsync(existing.UserId, Guid.Empty);
+        await _loginRepository.UpdateTokenAsync(existing.UserId, Guid.Empty);
         return true;
     }
 

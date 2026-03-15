@@ -19,8 +19,8 @@ public class TokenAuthAttribute : Attribute, IAsyncAuthorizationFilter
             return;
         }
 
-        var repository = context.HttpContext.RequestServices.GetRequiredService<ILoginRepository>();
-        var login = await repository.GetByTokenAsync(token);
+        var loginRepository = context.HttpContext.RequestServices.GetRequiredService<ILoginRepository>();
+        var login = await loginRepository.GetByTokenAsync(token);
 
         if (login == null)
         {
@@ -28,6 +28,10 @@ public class TokenAuthAttribute : Attribute, IAsyncAuthorizationFilter
             return;
         }
 
-        context.HttpContext.Items["User"] = login;
+        var userRepository = context.HttpContext.RequestServices.GetRequiredService<IUserRepository>();
+        var user = await userRepository.GetByUserIdAsync(login.UserId);
+
+        context.HttpContext.Items["Login"] = login;
+        context.HttpContext.Items["User"] = user;
     }
 }
