@@ -24,4 +24,22 @@ public class UserRepository : IUserRepository
         await _db.SaveChangesAsync();
         return user;
     }
+
+    public async Task<List<User>> GetAllWithLoginsAsync()
+    {
+        return await _db.Users.Include(u => u.Login).ToListAsync();
+    }
+
+    public async Task UpdateRoleAsync(Guid userId, UserRole role)
+    {
+        await _db.Users
+            .Where(u => u.UserId == userId)
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.Role, role));
+    }
+
+    public async Task DeleteAsync(Guid userId)
+    {
+        await _db.Logins.Where(l => l.UserId == userId).ExecuteDeleteAsync();
+        await _db.Users.Where(u => u.UserId == userId).ExecuteDeleteAsync();
+    }
 }

@@ -8,4 +8,5 @@ public interface ILoginRepository
     Task<Login> CreateAsync(Login login);
     Task UpdateTokenAsync(Guid userId, Guid token);
     Task<Login?> GetByTokenAsync(Guid token);
+    Task UpdatePasswordAsync(Guid userId, string hashedPassword, string salt);
 }

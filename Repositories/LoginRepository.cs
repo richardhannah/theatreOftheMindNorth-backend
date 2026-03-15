@@ -36,4 +36,14 @@ public class LoginRepository : ILoginRepository
     {
         return await _db.Logins.FirstOrDefaultAsync(l => l.Token == token);
     }
+
+    public async Task UpdatePasswordAsync(Guid userId, string hashedPassword, string salt)
+    {
+        await _db.Logins
+            .Where(l => l.UserId == userId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(l => l.Password, hashedPassword)
+                .SetProperty(l => l.Salt, salt)
+                .SetProperty(l => l.Token, Guid.Empty));
+    }
 }
