@@ -53,6 +53,7 @@ catch (Exception ex)
 app.UseCors();
 app.MapControllers();
 app.MapHub<ChatHub>("/chatHub");
+app.MapHub<VttHub>("/vttHub");
 
 app.MapGet("/healthz", () => Results.Ok());
 
