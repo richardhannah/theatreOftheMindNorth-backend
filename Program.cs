@@ -32,6 +32,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<ILoginRepository, LoginRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ICharacterRepository, CharacterRepository>();
+builder.Services.AddScoped<IStashRepository, StashRepository>();
 builder.Services.AddScoped<ILoginService, LoginService>();
 
 var app = builder.Build();
