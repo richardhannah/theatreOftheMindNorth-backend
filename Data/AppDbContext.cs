@@ -11,6 +11,7 @@ public class AppDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Character> Characters => Set<Character>();
     public DbSet<Stash> Stashes => Set<Stash>();
+    public DbSet<VttSceneEntity> VttScenes => Set<VttSceneEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -70,6 +71,12 @@ public class AppDbContext : DbContext
                 Copper = 0,
                 Equipment = "[]"
             });
+        });
+
+        modelBuilder.Entity<VttSceneEntity>(entity =>
+        {
+            entity.HasKey(e => e.SceneId);
+            entity.Property(e => e.Counters).HasColumnType("jsonb");
         });
     }
 }

@@ -28,7 +28,7 @@ public class StashesController : ControllerBase
         if (character == null)
             return NotFound(new { error = "Character not found." });
 
-        if (character.UserId != user.UserId)
+        if (character.UserId != user.UserId && user.Role != UserRole.Admin)
             return StatusCode(403, new { error = "Not your character." });
 
         var stashes = await _stashRepo.GetForCharacterAsync(characterId);
@@ -44,7 +44,7 @@ public class StashesController : ControllerBase
         if (character == null)
             return NotFound(new { error = "Character not found." });
 
-        if (character.UserId != user.UserId)
+        if (character.UserId != user.UserId && user.Role != UserRole.Admin)
             return StatusCode(403, new { error = "Not your character." });
 
         var stash = new Stash
@@ -75,7 +75,7 @@ public class StashesController : ControllerBase
         if (stash.CharacterId != null)
         {
             var character = await _characterRepo.GetByIdAsync(stash.CharacterId.Value);
-            if (character != null && character.UserId != user.UserId && !stash.Shared)
+            if (character != null && character.UserId != user.UserId && !stash.Shared && user.Role != UserRole.Admin)
                 return StatusCode(403, new { error = "Not your stash." });
         }
 
@@ -108,7 +108,7 @@ public class StashesController : ControllerBase
         if (stash.CharacterId != null)
         {
             var character = await _characterRepo.GetByIdAsync(stash.CharacterId.Value);
-            if (character != null && character.UserId != user.UserId)
+            if (character != null && character.UserId != user.UserId && user.Role != UserRole.Admin)
                 return StatusCode(403, new { error = "Not your stash." });
         }
 

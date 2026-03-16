@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TheatreOfTheMind.Data;
@@ -11,9 +12,11 @@ using TheatreOfTheMind.Data;
 namespace TheatreOfTheMind.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260316190144_AddTokenIdToCharacter")]
+    partial class AddTokenIdToCharacter
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -254,56 +257,6 @@ namespace TheatreOfTheMind.Migrations
                     b.HasKey("UserId");
 
                     b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("TheatreOfTheMind.Models.VttSceneEntity", b =>
-                {
-                    b.Property<string>("SceneId")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Counters")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<string>("GridColor")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("GridH")
-                        .HasColumnType("integer");
-
-                    b.Property<double>("GridOffsetX")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("GridOffsetY")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("GridOpacity")
-                        .HasColumnType("double precision");
-
-                    b.Property<int>("GridThickness")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("GridW")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("MapId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("NextCounterId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("SceneId");
-
-                    b.ToTable("VttScenes");
                 });
 
             modelBuilder.Entity("TheatreOfTheMind.Models.Character", b =>

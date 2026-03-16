@@ -10,6 +10,7 @@ public class Character
     // Identity
     public string Name { get; set; } = "";
     public string PlayerName { get; set; } = "";
+    public string TokenId { get; set; } = "";
     public string Class { get; set; } = "";
     public int Level { get; set; }
     public int Xp { get; set; }

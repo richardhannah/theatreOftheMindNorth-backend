@@ -29,7 +29,7 @@ public class CharactersController : ControllerBase
             ? await _characterRepo.GetAllAsync()
             : await _characterRepo.GetByUserIdAsync(user.UserId);
 
-        return Ok(characters.Select(c => new { c.CharacterId, c.Name, c.Class, c.Level, c.PlayerName }));
+        return Ok(characters.Select(c => new { c.CharacterId, c.Name, c.Class, c.Level, c.PlayerName, c.TokenId }));
     }
 
     [HttpGet("{characterId}")]
@@ -96,12 +96,13 @@ public class CharactersController : ControllerBase
         if (character == null)
             return NotFound(new { error = "Character not found." });
 
-        if (character.UserId != user.UserId)
+        if (character.UserId != user.UserId && user.Role != UserRole.Admin)
             return StatusCode(403, new { error = "Not your character." });
 
         // Update fields
         character.Name = dto.Name;
         character.PlayerName = dto.PlayerName;
+        character.TokenId = dto.TokenId;
         character.Class = dto.Class;
         character.Level = dto.Level;
         character.Xp = dto.Xp;
@@ -152,7 +153,12 @@ public class CharactersController : ControllerBase
             return Unauthorized();
 
         var character = await _characterRepo.GetByIdAsync(characterId);
-        if (character == null || character.UserId != login.UserId)
+        if (character == null)
+            return StatusCode(403);
+
+        var userRepo = HttpContext.RequestServices.GetRequiredService<IUserRepository>();
+        var beaconUser = await userRepo.GetByUserIdAsync(login.UserId);
+        if (character.UserId != login.UserId && beaconUser?.Role != UserRole.Admin)
             return StatusCode(403);
 
         var dto = System.Text.Json.JsonSerializer.Deserialize<Character>(
@@ -163,6 +169,7 @@ public class CharactersController : ControllerBase
 
         character.Name = dto.Name;
         character.PlayerName = dto.PlayerName;
+        character.TokenId = dto.TokenId;
         character.Class = dto.Class;
         character.Level = dto.Level;
         character.Xp = dto.Xp;
@@ -223,7 +230,7 @@ public class CharactersController : ControllerBase
         if (character == null)
             return NotFound(new { error = "Character not found." });
 
-        if (character.UserId != user.UserId)
+        if (character.UserId != user.UserId && user.Role != UserRole.Admin)
             return StatusCode(403, new { error = "Not your character." });
 
         await _characterRepo.DeleteAsync(characterId);
