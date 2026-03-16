@@ -1,8 +1,8 @@
-using System.Security.Cryptography;
 using Microsoft.AspNetCore.Mvc;
 using TheatreOfTheMind.Auth;
 using TheatreOfTheMind.Models;
 using TheatreOfTheMind.Repositories;
+using TheatreOfTheMind.Services;
 
 namespace TheatreOfTheMind.Controllers;
 
@@ -69,15 +69,8 @@ public class UsersController : ControllerBase
         if (user == null)
             return NotFound(new { error = "User not found." });
 
-        var saltBytes = RandomNumberGenerator.GetBytes(32);
-        var salt = Convert.ToBase64String(saltBytes);
-        var hash = Rfc2898DeriveBytes.Pbkdf2(
-            dto.NewPassword,
-            saltBytes,
-            100_000,
-            HashAlgorithmName.SHA256,
-            32);
-        var hashedPassword = Convert.ToBase64String(hash);
+        var salt = PasswordHasher.GenerateSalt();
+        var hashedPassword = PasswordHasher.HashPassword(dto.NewPassword, salt);
 
         await _loginRepository.UpdatePasswordAsync(userId, hashedPassword, salt);
         return Ok(new { message = "Password reset." });

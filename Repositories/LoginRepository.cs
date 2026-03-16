@@ -34,6 +34,7 @@ public class LoginRepository : ILoginRepository
 
     public async Task<Login?> GetByTokenAsync(Guid token)
     {
+        if (token == Guid.Empty) return null;
         return await _db.Logins.FirstOrDefaultAsync(l => l.Token == token);
     }
 

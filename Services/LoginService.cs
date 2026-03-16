@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using TheatreOfTheMind.Models;
 using TheatreOfTheMind.Repositories;
 
@@ -21,7 +20,7 @@ public class LoginService : ILoginService
 
         if (existing != null)
         {
-            var hashedAttempt = HashPassword(dto.Password, existing.Salt);
+            var hashedAttempt = PasswordHasher.HashPassword(dto.Password, existing.Salt);
             if (hashedAttempt != existing.Password)
                 return null;
 
@@ -38,8 +37,8 @@ public class LoginService : ILoginService
             };
         }
 
-        var salt = GenerateSalt();
-        var hashedPassword = HashPassword(dto.Password, salt);
+        var salt = PasswordHasher.GenerateSalt();
+        var hashedPassword = PasswordHasher.HashPassword(dto.Password, salt);
         var token = Guid.NewGuid();
 
         var login = new Login
@@ -75,29 +74,11 @@ public class LoginService : ILoginService
         if (existing == null)
             return false;
 
-        var hashedAttempt = HashPassword(dto.Password, existing.Salt);
+        var hashedAttempt = PasswordHasher.HashPassword(dto.Password, existing.Salt);
         if (hashedAttempt != existing.Password)
             return false;
 
         await _loginRepository.UpdateTokenAsync(existing.UserId, Guid.Empty);
         return true;
-    }
-
-    private static string GenerateSalt()
-    {
-        var saltBytes = RandomNumberGenerator.GetBytes(32);
-        return Convert.ToBase64String(saltBytes);
-    }
-
-    private static string HashPassword(string password, string salt)
-    {
-        var hash = Rfc2898DeriveBytes.Pbkdf2(
-            password,
-            Convert.FromBase64String(salt),
-            100_000,
-            HashAlgorithmName.SHA256,
-            32);
-
-        return Convert.ToBase64String(hash);
     }
 }

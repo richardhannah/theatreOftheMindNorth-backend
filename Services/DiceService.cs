@@ -8,8 +8,6 @@ public static partial class DiceService
     [GeneratedRegex(@"#(\d*)d(\d+)(?:([+\-*])(\d+))?", RegexOptions.IgnoreCase)]
     private static partial Regex DiceCodeRegex();
 
-    private static readonly Random Rng = new();
-
     public static ChatMessage? ProcessDiceRolls(ChatMessage msg)
     {
         var matches = DiceCodeRegex().Matches(msg.Text);
@@ -21,6 +19,10 @@ public static partial class DiceService
         {
             var count = string.IsNullOrEmpty(m.Groups[1].Value) ? 1 : int.Parse(m.Groups[1].Value);
             var sides = int.Parse(m.Groups[2].Value);
+
+            // Bounds check to prevent DoS
+            count = Math.Clamp(count, 1, 100);
+            sides = Math.Clamp(sides, 1, 1000);
             var op = m.Groups[3].Value;
             var modValue = string.IsNullOrEmpty(m.Groups[4].Value) ? 0 : int.Parse(m.Groups[4].Value);
 
@@ -50,7 +52,7 @@ public static partial class DiceService
         var rolls = new int[count];
         for (var i = 0; i < count; i++)
         {
-            rolls[i] = Rng.Next(1, sides + 1);
+            rolls[i] = Random.Shared.Next(1, sides + 1);
         }
         return rolls;
     }
