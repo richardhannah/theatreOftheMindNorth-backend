@@ -77,6 +77,27 @@ public class VttHub : Hub
             };
             if (e.IsActive) _state.ActiveSceneId = e.SceneId;
         }
+        // Ensure default scene always exists with correct settings
+        _state.Scenes["default"] = new VttScene
+        {
+            Id = "default",
+            Name = "Default",
+            MapId = "default",
+            Grid = new VttGridSettings
+            {
+                GridW = 20,
+                GridH = 20,
+                GridColor = "#ffffff",
+                GridOpacity = 0,
+                GridThickness = 1,
+            },
+            Counters = _state.Scenes.ContainsKey("default") ? _state.Scenes["default"].Counters : new(),
+            NextCounterId = _state.Scenes.ContainsKey("default") ? _state.Scenes["default"].NextCounterId : 0,
+        };
+        // If no active scene, use default
+        if (string.IsNullOrEmpty(_state.ActiveSceneId))
+            _state.ActiveSceneId = "default";
+
         _loaded = true;
     }
 
@@ -153,11 +174,12 @@ public class VttHub : Hub
 
     public async Task DeleteScene(string sceneId)
     {
+        if (sceneId == "default") return;
         lock (_lock)
         {
             _state.Scenes.Remove(sceneId);
             if (_state.ActiveSceneId == sceneId)
-                _state.ActiveSceneId = "";
+                _state.ActiveSceneId = "default";
         }
         await Clients.All.SendAsync("SceneDeleted", sceneId);
     }
