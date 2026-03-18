@@ -40,7 +40,9 @@ public static partial class DiceService
 
         return new ChatMessage
         {
-            Name = "Dice Bot",
+            Name = msg.Name,
+            PlayerName = msg.PlayerName,
+            TokenId = msg.TokenId,
             Text = string.Join("  |  ", results),
             Ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
             IsDiceRoll = true

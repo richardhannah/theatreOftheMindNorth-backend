@@ -9,7 +9,7 @@ namespace TheatreOfTheMind.Hubs;
 
 public class VttCounter
 {
-    public int Id { get; set; }
+    public string Id { get; set; } = "";
     public string TokenId { get; set; } = "";
     public string Label { get; set; } = "";
     public double X { get; set; }
@@ -34,7 +34,6 @@ public class VttScene
     public string MapId { get; set; } = "";
     public VttGridSettings Grid { get; set; } = new();
     public List<VttCounter> Counters { get; set; } = new();
-    public int NextCounterId { get; set; }
 }
 
 public class VttState
@@ -56,7 +55,8 @@ public class VttHub : Hub
         var entities = db.VttScenes.AsNoTracking().ToList();
         foreach (var e in entities)
         {
-            var counters = JsonSerializer.Deserialize<List<VttCounter>>(e.Counters, _jsonOpts) ?? new();
+            // Clear old counter data — grid settings are preserved
+            var counters = new List<VttCounter>();
             _state.Scenes[e.SceneId] = new VttScene
             {
                 Id = e.SceneId,
@@ -73,7 +73,6 @@ public class VttHub : Hub
                     GridThickness = e.GridThickness,
                 },
                 Counters = counters,
-                NextCounterId = e.NextCounterId,
             };
             if (e.IsActive) _state.ActiveSceneId = e.SceneId;
         }
@@ -92,7 +91,6 @@ public class VttHub : Hub
                 GridThickness = 1,
             },
             Counters = _state.Scenes.ContainsKey("default") ? _state.Scenes["default"].Counters : new(),
-            NextCounterId = _state.Scenes.ContainsKey("default") ? _state.Scenes["default"].NextCounterId : 0,
         };
         // If no active scene, use default
         if (string.IsNullOrEmpty(_state.ActiveSceneId))
@@ -128,7 +126,6 @@ public class VttHub : Hub
                     scene.MapId,
                     scene.Grid,
                     scene.Counters,
-                    scene.NextCounterId,
                 } : null,
             };
         }
@@ -166,7 +163,6 @@ public class VttHub : Hub
                 scene.MapId,
                 scene.Grid,
                 scene.Counters,
-                scene.NextCounterId,
             };
         }
         await Clients.All.SendAsync("SceneSwitched", sceneData);
@@ -190,13 +186,12 @@ public class VttHub : Hub
         {
             var scene = GetActiveScene();
             if (scene == null) return;
-            scene.NextCounterId = Math.Max(scene.NextCounterId, counter.Id + 1);
             scene.Counters.Add(counter);
         }
         await Clients.Others.SendAsync("CounterAdded", counter);
     }
 
-    public async Task MoveCounter(int id, double x, double y)
+    public async Task MoveCounter(string id, double x, double y)
     {
         lock (_lock)
         {
@@ -207,7 +202,7 @@ public class VttHub : Hub
         await Clients.Others.SendAsync("CounterMoved", id, x, y);
     }
 
-    public async Task RemoveCounter(int id)
+    public async Task RemoveCounter(string id)
     {
         lock (_lock)
         {
