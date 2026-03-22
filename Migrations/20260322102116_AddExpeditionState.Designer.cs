@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TheatreOfTheMind.Data;
@@ -11,9 +12,11 @@ using TheatreOfTheMind.Data;
 namespace TheatreOfTheMind.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260322102116_AddExpeditionState")]
+    partial class AddExpeditionState
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -162,9 +165,9 @@ namespace TheatreOfTheMind.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Notes")
+                    b.Property<string>("Mercenaries")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("jsonb");
 
                     b.HasKey("Id");
 
@@ -202,31 +205,6 @@ namespace TheatreOfTheMind.Migrations
                     b.ToTable("Logins");
                 });
 
-            modelBuilder.Entity("TheatreOfTheMind.Models.Mercenary", b =>
-                {
-                    b.Property<Guid>("MercenaryId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Count")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Race")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("MercenaryId");
-
-                    b.HasIndex("Type", "Race")
-                        .IsUnique();
-
-                    b.ToTable("Mercenaries");
-                });
-
             modelBuilder.Entity("TheatreOfTheMind.Models.PackAnimal", b =>
                 {
                     b.Property<Guid>("PackAnimalId")
@@ -253,27 +231,6 @@ namespace TheatreOfTheMind.Migrations
                     b.HasIndex("AssignedWagonId");
 
                     b.ToTable("PackAnimals");
-                });
-
-            modelBuilder.Entity("TheatreOfTheMind.Models.Specialist", b =>
-                {
-                    b.Property<Guid>("SpecialistId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Count")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("SpecialistId");
-
-                    b.HasIndex("Type")
-                        .IsUnique();
-
-                    b.ToTable("Specialists");
                 });
 
             modelBuilder.Entity("TheatreOfTheMind.Models.Stash", b =>

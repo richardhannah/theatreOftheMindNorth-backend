@@ -12,6 +12,11 @@ public class AppDbContext : DbContext
     public DbSet<Character> Characters => Set<Character>();
     public DbSet<Stash> Stashes => Set<Stash>();
     public DbSet<VttSceneEntity> VttScenes => Set<VttSceneEntity>();
+    public DbSet<PackAnimal> PackAnimals => Set<PackAnimal>();
+    public DbSet<Wagon> Wagons => Set<Wagon>();
+    public DbSet<ExpeditionState> ExpeditionState => Set<ExpeditionState>();
+    public DbSet<Mercenary> Mercenaries => Set<Mercenary>();
+    public DbSet<Specialist> Specialists => Set<Specialist>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -77,6 +82,38 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(e => e.SceneId);
             entity.Property(e => e.Counters).HasColumnType("jsonb");
+        });
+
+        modelBuilder.Entity<PackAnimal>(entity =>
+        {
+            entity.HasKey(e => e.PackAnimalId);
+            entity.HasOne(e => e.AssignedWagon)
+                  .WithMany(w => w.AssignedAnimals)
+                  .HasForeignKey(e => e.AssignedWagonId)
+                  .IsRequired(false);
+        });
+
+        modelBuilder.Entity<Wagon>(entity =>
+        {
+            entity.HasKey(e => e.WagonId);
+        });
+
+        modelBuilder.Entity<ExpeditionState>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.DisabledRaces).HasColumnType("jsonb");
+        });
+
+        modelBuilder.Entity<Mercenary>(entity =>
+        {
+            entity.HasKey(e => e.MercenaryId);
+            entity.HasIndex(e => new { e.Type, e.Race }).IsUnique();
+        });
+
+        modelBuilder.Entity<Specialist>(entity =>
+        {
+            entity.HasKey(e => e.SpecialistId);
+            entity.HasIndex(e => e.Type).IsUnique();
         });
     }
 }
