@@ -18,7 +18,7 @@ public class RequireRoleAttribute : Attribute, IAuthorizationFilter
     {
         var user = context.HttpContext.Items["User"] as User;
 
-        if (user == null || user.Role != _requiredRole)
+        if (user == null || user.Role < _requiredRole)
         {
             context.Result = new ObjectResult(new { error = "Forbidden." }) { StatusCode = 403 };
         }

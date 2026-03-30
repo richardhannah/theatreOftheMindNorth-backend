@@ -33,7 +33,7 @@ public class LoginService : ILoginService
             {
                 Token = newToken,
                 Username = existing.Username,
-                Role = (user?.Role ?? UserRole.User).ToString()
+                Role = (user?.Role ?? UserRole.Guest).ToString()
             };
         }
 
@@ -55,7 +55,7 @@ public class LoginService : ILoginService
         var newUser = new User
         {
             UserId = login.UserId,
-            Role = UserRole.User
+            Role = UserRole.Guest
         };
 
         await _userRepository.CreateAsync(newUser);
