@@ -65,14 +65,45 @@ public class VttHub : Hub
     private static bool _loaded = false;
     private static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
 
+    public static void ResetState()
+    {
+        lock (_lock)
+        {
+            _state.Scenes = new();
+            _state.ActiveSceneId = "";
+            _state.Initiative = new();
+            _loaded = false;
+        }
+    }
+
     private static void LoadFromDb(AppDbContext db)
     {
         if (_loaded) return;
-        var entities = db.VttScenes.AsNoTracking().ToList();
+        // Read scenes with raw SQL to bypass Npgsql's jsonb mapping issue
+        var entities = new List<(string SceneId, string Name, string MapId, int GridW, int GridH, double GridOffsetX, double GridOffsetY, string GridColor, double GridOpacity, int GridThickness, string Counters, bool IsActive)>();
+        using (var cmd = db.Database.GetDbConnection().CreateCommand())
+        {
+            cmd.CommandText = @"SELECT ""SceneId"", ""Name"", ""MapId"", ""GridW"", ""GridH"", ""GridOffsetX"", ""GridOffsetY"", ""GridColor"", ""GridOpacity"", ""GridThickness"", ""Counters""::text, ""IsActive"" FROM ""VttScenes""";
+            if (cmd.Connection!.State != System.Data.ConnectionState.Open) cmd.Connection.Open();
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                entities.Add((
+                    reader.GetString(0), reader.GetString(1), reader.GetString(2),
+                    reader.GetInt32(3), reader.GetInt32(4), reader.GetDouble(5), reader.GetDouble(6),
+                    reader.GetString(7), reader.GetDouble(8), reader.GetInt32(9),
+                    reader.GetString(10), reader.GetBoolean(11)
+                ));
+            }
+        }
         foreach (var e in entities)
         {
-            // Clear old counter data — grid settings are preserved
             var counters = new List<VttCounter>();
+            if (!string.IsNullOrEmpty(e.Counters) && e.Counters != "[]")
+            {
+                try { counters = JsonSerializer.Deserialize<List<VttCounter>>(e.Counters, _jsonOpts) ?? new(); }
+                catch { /* ignore malformed counter data */ }
+            }
             _state.Scenes[e.SceneId] = new VttScene
             {
                 Id = e.SceneId,
@@ -203,6 +234,7 @@ public class VttHub : Hub
         {
             var scene = GetActiveScene();
             if (scene == null) return;
+            if (scene.Counters.Any(c => c.Id == counter.Id)) return;
             scene.Counters.Add(counter);
         }
         await Clients.Others.SendAsync("CounterAdded", counter);

@@ -17,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<ExpeditionState> ExpeditionState => Set<ExpeditionState>();
     public DbSet<Mercenary> Mercenaries => Set<Mercenary>();
     public DbSet<Specialist> Specialists => Set<Specialist>();
+    public DbSet<VttSceneBackup> VttSceneBackups => Set<VttSceneBackup>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -82,6 +83,14 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(e => e.SceneId);
             entity.Property(e => e.Counters).HasColumnType("jsonb");
+        });
+
+        modelBuilder.Entity<VttSceneBackup>(entity =>
+        {
+            entity.HasKey(e => e.BackupId);
+            entity.Property(e => e.BackupId).ValueGeneratedOnAdd();
+            entity.Property(e => e.Counters).HasColumnType("jsonb");
+            entity.HasIndex(e => e.BackupTimestamp);
         });
 
         modelBuilder.Entity<PackAnimal>(entity =>

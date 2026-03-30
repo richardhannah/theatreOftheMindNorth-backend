@@ -39,6 +39,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICharacterRepository, CharacterRepository>();
 builder.Services.AddScoped<IStashRepository, StashRepository>();
 builder.Services.AddScoped<ILoginService, LoginService>();
+builder.Services.AddHostedService<SceneBackupService>();
 
 var app = builder.Build();
 

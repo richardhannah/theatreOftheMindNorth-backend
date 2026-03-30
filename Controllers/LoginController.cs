@@ -18,17 +18,16 @@ public class LoginController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
-            return BadRequest(new { error = "Username and password are required." });
+        if (string.IsNullOrWhiteSpace(dto.Username))
+            return BadRequest(new { error = "Username is required." });
 
         if (dto.Action.Equals("logout", StringComparison.OrdinalIgnoreCase))
         {
-            var success = await _loginService.LogoutAsync(dto);
-            if (!success)
-                return Unauthorized(new { error = "Invalid credentials." });
-
             return Ok(new { message = "Logged out." });
         }
+
+        if (string.IsNullOrWhiteSpace(dto.Password))
+            return BadRequest(new { error = "Password is required." });
 
         var result = await _loginService.LoginOrRegisterAsync(dto);
 
