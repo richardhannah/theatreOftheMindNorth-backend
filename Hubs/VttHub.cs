@@ -36,10 +36,26 @@ public class VttScene
     public List<VttCounter> Counters { get; set; } = new();
 }
 
+public class VttInitiativeRoll
+{
+    public int Roll { get; set; }
+    public int Total { get; set; }
+}
+
+public class VttInitiativeState
+{
+    public bool CombatActive { get; set; }
+    public Dictionary<string, int> InitMods { get; set; } = new();
+    public Dictionary<string, VttInitiativeRoll> InitRolls { get; set; } = new();
+    public List<string> InitOrder { get; set; } = new();
+    public int InitTurn { get; set; }
+}
+
 public class VttState
 {
     public Dictionary<string, VttScene> Scenes { get; set; } = new();
     public string ActiveSceneId { get; set; } = "";
+    public VttInitiativeState Initiative { get; set; } = new();
 }
 
 public class VttHub : Hub
@@ -127,6 +143,7 @@ public class VttHub : Hub
                     scene.Grid,
                     scene.Counters,
                 } : null,
+                initiative = _state.Initiative,
             };
         }
         await Clients.Caller.SendAsync("FullState", snapshot);
@@ -220,6 +237,16 @@ public class VttHub : Hub
             if (scene != null) scene.Grid = grid;
         }
         await Clients.Others.SendAsync("GridUpdated", grid);
+    }
+
+    // Initiative
+    public async Task UpdateInitiative(VttInitiativeState initiative)
+    {
+        lock (_lock)
+        {
+            _state.Initiative = initiative;
+        }
+        await Clients.Others.SendAsync("InitiativeUpdated", initiative);
     }
 
     // Chat
