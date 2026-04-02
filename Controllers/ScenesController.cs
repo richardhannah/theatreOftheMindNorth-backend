@@ -30,7 +30,7 @@ public class ScenesController : ControllerBase
     }
 
     [HttpPut]
-    [RequireRole(UserRole.Admin)]
+    [RequireRole(UserRole.GamesMaster)]
     public async Task<IActionResult> SaveAll([FromBody] List<VttSceneEntity> scenes)
     {
         // Replace all scenes with the incoming state
@@ -47,7 +47,7 @@ public class ScenesController : ControllerBase
     }
 
     [HttpGet("backups")]
-    [RequireRole(UserRole.Admin)]
+    [RequireRole(UserRole.GamesMaster)]
     public async Task<IActionResult> GetBackups()
     {
         var timestamps = await _db.VttSceneBackups
@@ -61,7 +61,7 @@ public class ScenesController : ControllerBase
     }
 
     [HttpPost("restore")]
-    [RequireRole(UserRole.Admin)]
+    [RequireRole(UserRole.GamesMaster)]
     public async Task<IActionResult> Restore([FromBody] RestoreRequest request)
     {
         var backups = await _db.VttSceneBackups

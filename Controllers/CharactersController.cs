@@ -23,7 +23,7 @@ public class CharactersController : ControllerBase
     public async Task<IActionResult> GetMyCharacters()
     {
         var user = (User)HttpContext.Items["User"]!;
-        var isAdmin = user.Role == UserRole.Admin;
+        var isAdmin = user.Role >= UserRole.GamesMaster;
 
         var characters = isAdmin
             ? await _characterRepo.GetAllAsync()
@@ -41,7 +41,7 @@ public class CharactersController : ControllerBase
         if (character == null)
             return NotFound(new { error = "Character not found." });
 
-        if (character.UserId != user.UserId && user.Role != UserRole.Admin)
+        if (character.UserId != user.UserId && user.Role < UserRole.GamesMaster)
             return StatusCode(403, new { error = "Not your character." });
 
         var stashes = await _stashRepo.GetForCharacterAsync(characterId);
@@ -96,7 +96,7 @@ public class CharactersController : ControllerBase
         if (character == null)
             return NotFound(new { error = "Character not found." });
 
-        if (character.UserId != user.UserId && user.Role != UserRole.Admin)
+        if (character.UserId != user.UserId && user.Role < UserRole.GamesMaster)
             return StatusCode(403, new { error = "Not your character." });
 
         // Update fields
@@ -158,7 +158,7 @@ public class CharactersController : ControllerBase
 
         var userRepo = HttpContext.RequestServices.GetRequiredService<IUserRepository>();
         var beaconUser = await userRepo.GetByUserIdAsync(login.UserId);
-        if (character.UserId != login.UserId && beaconUser?.Role != UserRole.Admin)
+        if (character.UserId != login.UserId && beaconUser?.Role < UserRole.GamesMaster)
             return StatusCode(403);
 
         var dto = System.Text.Json.JsonSerializer.Deserialize<Character>(
@@ -230,7 +230,7 @@ public class CharactersController : ControllerBase
         if (character == null)
             return NotFound(new { error = "Character not found." });
 
-        if (character.UserId != user.UserId && user.Role != UserRole.Admin)
+        if (character.UserId != user.UserId && user.Role < UserRole.GamesMaster)
             return StatusCode(403, new { error = "Not your character." });
 
         await _characterRepo.DeleteAsync(characterId);
