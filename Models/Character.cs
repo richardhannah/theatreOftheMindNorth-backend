@@ -47,6 +47,9 @@ public class Character
     public string PreparedSpells { get; set; } = "[]";
     public string Spellbook { get; set; } = "[]";
 
+    // Games Master
+    public Guid? GamesMasterId { get; set; }
+
     // Notes
     public string Notes { get; set; } = "";
 

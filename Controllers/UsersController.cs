@@ -38,7 +38,7 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> UpdateRole(Guid userId, [FromBody] UpdateRoleDto dto)
     {
         if (!Enum.TryParse<UserRole>(dto.Role, true, out var role))
-            return BadRequest(new { error = "Invalid role. Use 'Guest', 'User', or 'Admin'." });
+            return BadRequest(new { error = "Invalid role. Use 'Guest', 'User', 'GamesMaster', or 'Admin'." });
 
         var user = await _userRepository.GetByUserIdAsync(userId);
         if (user == null)

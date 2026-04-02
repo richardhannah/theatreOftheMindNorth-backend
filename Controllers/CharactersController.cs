@@ -19,15 +19,41 @@ public class CharactersController : ControllerBase
         _stashRepo = stashRepo;
     }
 
+    [HttpGet("gamemasters")]
+    public async Task<IActionResult> GetGamesMasters()
+    {
+        var userRepo = HttpContext.RequestServices.GetRequiredService<IUserRepository>();
+        var users = await userRepo.GetAllWithLoginsAsync();
+        var gms = users
+            .Where(u => u.Role >= UserRole.GamesMaster)
+            .Select(u => new
+            {
+                u.UserId,
+                Username = u.Login?.Username ?? "",
+                Role = u.Role.ToString(),
+            });
+        return Ok(gms);
+    }
+
     [HttpGet]
     public async Task<IActionResult> GetMyCharacters()
     {
         var user = (User)HttpContext.Items["User"]!;
-        var isAdmin = user.Role >= UserRole.GamesMaster;
 
-        var characters = isAdmin
-            ? await _characterRepo.GetAllAsync()
-            : await _characterRepo.GetByUserIdAsync(user.UserId);
+        List<Character> characters;
+        if (user.Role == UserRole.Admin)
+        {
+            characters = await _characterRepo.GetAllAsync();
+        }
+        else if (user.Role == UserRole.GamesMaster)
+        {
+            var all = await _characterRepo.GetAllAsync();
+            characters = all.Where(c => c.UserId == user.UserId || c.GamesMasterId == user.UserId).ToList();
+        }
+        else
+        {
+            characters = await _characterRepo.GetByUserIdAsync(user.UserId);
+        }
 
         return Ok(characters.Select(c => new { c.CharacterId, c.Name, c.Class, c.Level, c.PlayerName, c.TokenId }));
     }
@@ -43,6 +69,16 @@ public class CharactersController : ControllerBase
 
         if (character.UserId != user.UserId && user.Role < UserRole.GamesMaster)
             return StatusCode(403, new { error = "Not your character." });
+
+        // Default GamesMasterId to first Admin if not yet assigned
+        if (character.GamesMasterId == null)
+        {
+            var userRepo = HttpContext.RequestServices.GetRequiredService<IUserRepository>();
+            var allUsers = await userRepo.GetAllWithLoginsAsync();
+            var admin = allUsers.FirstOrDefault(u => u.Role == UserRole.Admin);
+            if (admin != null)
+                character.GamesMasterId = admin.UserId;
+        }
 
         var stashes = await _stashRepo.GetForCharacterAsync(characterId);
 
@@ -108,6 +144,7 @@ public class CharactersController : ControllerBase
         character.Xp = dto.Xp;
         character.Alignment = dto.Alignment;
         character.Title = dto.Title;
+        character.GamesMasterId = dto.GamesMasterId;
 
         character.Str = dto.Str;
         character.Int = dto.Int;
