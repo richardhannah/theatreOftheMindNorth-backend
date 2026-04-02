@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="TheatreOfTheMind.csproj" />
+  <Project Path="TheatreOfTheMind.Tests/TheatreOfTheMind.Tests.csproj" />
+</Solution>

@@ -5,7 +5,7 @@ namespace TheatreOfTheMind.Services;
 
 public static partial class DiceService
 {
-    [GeneratedRegex(@"#(\d*)d(\d+)(?:([+\-*])(\d+))?", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"#(\d*)d(\d+)(?:e(\d+))?(?:([+\-*])(\d+))?", RegexOptions.IgnoreCase)]
     private static partial Regex DiceCodeRegex();
 
     public static ChatMessage? ProcessDiceRolls(ChatMessage msg)
@@ -23,19 +23,27 @@ public static partial class DiceService
             // Bounds check to prevent DoS
             count = Math.Clamp(count, 1, 100);
             sides = Math.Clamp(sides, 1, 1000);
-            var op = m.Groups[3].Value;
-            var modValue = string.IsNullOrEmpty(m.Groups[4].Value) ? 0 : int.Parse(m.Groups[4].Value);
+            var threshold = string.IsNullOrEmpty(m.Groups[3].Value) ? 0 : int.Parse(m.Groups[3].Value);
+            var op = m.Groups[4].Value;
+            var modValue = string.IsNullOrEmpty(m.Groups[5].Value) ? 0 : int.Parse(m.Groups[5].Value);
 
             var rolls = RollDice(count, sides);
-            var subtotal = rolls.Sum();
-            var total = ApplyModifier(subtotal, op, modValue);
-
-            var rollsPart = $"[{string.Join(", ", rolls)}]";
             var diceCode = m.Value;
+            var rollsPart = $"[{string.Join(", ", rolls)}]";
 
-            results.Add(string.IsNullOrEmpty(op)
-                ? $"{diceCode} => {rollsPart} = {total}"
-                : $"{diceCode} => {rollsPart} = {subtotal} {op} {modValue} = {total}");
+            if (threshold > 0)
+            {
+                var successes = rolls.Count(r => r >= threshold);
+                results.Add($"{diceCode} => {rollsPart} = {successes} {(successes == 1 ? "success" : "successes")} (>= {threshold})");
+            }
+            else
+            {
+                var subtotal = rolls.Sum();
+                var total = ApplyModifier(subtotal, op, modValue);
+                results.Add(string.IsNullOrEmpty(op)
+                    ? $"{diceCode} => {rollsPart} = {total}"
+                    : $"{diceCode} => {rollsPart} = {subtotal} {op} {modValue} = {total}");
+            }
         }
 
         return new ChatMessage
