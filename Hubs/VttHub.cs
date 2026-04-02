@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using TheatreOfTheMind.Data;
@@ -45,9 +46,12 @@ public class VttInitiativeRoll
 public class VttInitiativeState
 {
     public bool CombatActive { get; set; }
+    public string GameType { get; set; } = "dnd";
+    public Dictionary<string, int> InitDice { get; set; } = new();
+    public Dictionary<string, bool> InitSeized { get; set; } = new();
     public Dictionary<string, int> InitMods { get; set; } = new();
     public Dictionary<string, VttInitiativeRoll> InitRolls { get; set; } = new();
-    public List<string> InitOrder { get; set; } = new();
+    public JsonArray InitOrder { get; set; } = new();
     public int InitTurn { get; set; }
 }
 
