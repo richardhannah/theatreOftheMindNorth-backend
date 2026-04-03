@@ -255,6 +255,17 @@ public class VttHub : Hub
         await Clients.Others.SendAsync("CounterMoved", id, x, y);
     }
 
+    public async Task RenameCounter(string id, string label)
+    {
+        lock (_lock)
+        {
+            var scene = GetActiveScene();
+            var counter = scene?.Counters.Find(c => c.Id == id);
+            if (counter != null) counter.Label = label;
+        }
+        await Clients.Others.SendAsync("CounterRenamed", id, label);
+    }
+
     public async Task RemoveCounter(string id)
     {
         lock (_lock)
