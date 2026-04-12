@@ -83,6 +83,7 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(e => e.SceneId);
             entity.Property(e => e.Counters).HasColumnType("jsonb");
+            entity.Property(e => e.FogReveals).HasColumnType("jsonb");
         });
 
         modelBuilder.Entity<VttSceneBackup>(entity =>
@@ -90,6 +91,7 @@ public class AppDbContext : DbContext
             entity.HasKey(e => e.BackupId);
             entity.Property(e => e.BackupId).ValueGeneratedOnAdd();
             entity.Property(e => e.Counters).HasColumnType("jsonb");
+            entity.Property(e => e.FogReveals).HasColumnType("jsonb");
             entity.HasIndex(e => e.BackupTimestamp);
         });
 

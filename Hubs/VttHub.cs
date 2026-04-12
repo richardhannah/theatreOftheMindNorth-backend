@@ -28,6 +28,20 @@ public class VttGridSettings
     public int GridThickness { get; set; } = 1;
 }
 
+public class VttFogRect
+{
+    public double X { get; set; }
+    public double Y { get; set; }
+    public double W { get; set; }
+    public double H { get; set; }
+}
+
+public class VttFogState
+{
+    public bool Enabled { get; set; }
+    public List<VttFogRect> Reveals { get; set; } = new();
+}
+
 public class VttScene
 {
     public string Id { get; set; } = "";
@@ -35,6 +49,7 @@ public class VttScene
     public string MapId { get; set; } = "";
     public VttGridSettings Grid { get; set; } = new();
     public List<VttCounter> Counters { get; set; } = new();
+    public VttFogState Fog { get; set; } = new();
 }
 
 public class VttInitiativeRoll
@@ -84,10 +99,10 @@ public class VttHub : Hub
     {
         if (_loaded) return;
         // Read scenes with raw SQL to bypass Npgsql's jsonb mapping issue
-        var entities = new List<(string SceneId, string Name, string MapId, int GridW, int GridH, double GridOffsetX, double GridOffsetY, string GridColor, double GridOpacity, int GridThickness, string Counters, bool IsActive)>();
+        var entities = new List<(string SceneId, string Name, string MapId, int GridW, int GridH, double GridOffsetX, double GridOffsetY, string GridColor, double GridOpacity, int GridThickness, string Counters, bool FogEnabled, string FogReveals, bool IsActive)>();
         using (var cmd = db.Database.GetDbConnection().CreateCommand())
         {
-            cmd.CommandText = @"SELECT ""SceneId"", ""Name"", ""MapId"", ""GridW"", ""GridH"", ""GridOffsetX"", ""GridOffsetY"", ""GridColor"", ""GridOpacity"", ""GridThickness"", ""Counters""::text, ""IsActive"" FROM ""VttScenes""";
+            cmd.CommandText = @"SELECT ""SceneId"", ""Name"", ""MapId"", ""GridW"", ""GridH"", ""GridOffsetX"", ""GridOffsetY"", ""GridColor"", ""GridOpacity"", ""GridThickness"", ""Counters""::text, ""FogEnabled"", ""FogReveals""::text, ""IsActive"" FROM ""VttScenes""";
             if (cmd.Connection!.State != System.Data.ConnectionState.Open) cmd.Connection.Open();
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
@@ -96,7 +111,8 @@ public class VttHub : Hub
                     reader.GetString(0), reader.GetString(1), reader.GetString(2),
                     reader.GetInt32(3), reader.GetInt32(4), reader.GetDouble(5), reader.GetDouble(6),
                     reader.GetString(7), reader.GetDouble(8), reader.GetInt32(9),
-                    reader.GetString(10), reader.GetBoolean(11)
+                    reader.GetString(10), reader.GetBoolean(11), reader.GetString(12),
+                    reader.GetBoolean(13)
                 ));
             }
         }
@@ -107,6 +123,12 @@ public class VttHub : Hub
             {
                 try { counters = JsonSerializer.Deserialize<List<VttCounter>>(e.Counters, _jsonOpts) ?? new(); }
                 catch { /* ignore malformed counter data */ }
+            }
+            var fogReveals = new List<VttFogRect>();
+            if (!string.IsNullOrEmpty(e.FogReveals) && e.FogReveals != "[]")
+            {
+                try { fogReveals = JsonSerializer.Deserialize<List<VttFogRect>>(e.FogReveals, _jsonOpts) ?? new(); }
+                catch { /* ignore malformed fog data */ }
             }
             _state.Scenes[e.SceneId] = new VttScene
             {
@@ -124,6 +146,7 @@ public class VttHub : Hub
                     GridThickness = e.GridThickness,
                 },
                 Counters = counters,
+                Fog = new VttFogState { Enabled = e.FogEnabled, Reveals = fogReveals },
             };
             if (e.IsActive) _state.ActiveSceneId = e.SceneId;
         }
@@ -177,6 +200,8 @@ public class VttHub : Hub
                     scene.MapId,
                     scene.Grid,
                     scene.Counters,
+                    fogEnabled = scene.Fog.Enabled,
+                    fogReveals = scene.Fog.Reveals,
                 } : null,
                 initiative = _state.Initiative,
             };
@@ -215,6 +240,8 @@ public class VttHub : Hub
                 scene.MapId,
                 scene.Grid,
                 scene.Counters,
+                fogEnabled = scene.Fog.Enabled,
+                fogReveals = scene.Fog.Reveals,
             };
         }
         await Clients.All.SendAsync("SceneSwitched", sceneData);
@@ -284,6 +311,17 @@ public class VttHub : Hub
             if (scene != null) scene.Grid = grid;
         }
         await Clients.Others.SendAsync("GridUpdated", grid);
+    }
+
+    // Fog of war
+    public async Task UpdateFog(VttFogState fog)
+    {
+        lock (_lock)
+        {
+            var scene = GetActiveScene();
+            if (scene != null) scene.Fog = fog;
+        }
+        await Clients.Others.SendAsync("FogUpdated", fog);
     }
 
     // Initiative

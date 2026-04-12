@@ -13,5 +13,7 @@ public class VttSceneEntity
     public double GridOpacity { get; set; } = 0.15;
     public int GridThickness { get; set; } = 1;
     public string Counters { get; set; } = "[]";
+    public bool FogEnabled { get; set; }
+    public string FogReveals { get; set; } = "[]";
     public bool IsActive { get; set; }
 }
