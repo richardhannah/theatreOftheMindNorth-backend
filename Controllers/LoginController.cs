@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using TheatreOfTheMind.Auth;
 using TheatreOfTheMind.Models;
 using TheatreOfTheMind.Services;
 
@@ -35,5 +36,17 @@ public class LoginController : ControllerBase
             return Unauthorized(new { error = "Invalid password." });
 
         return Ok(result);
+    }
+
+    [HttpGet("me")]
+    [TokenAuth]
+    public IActionResult Me()
+    {
+        var user = HttpContext.Items["User"] as User;
+        var login = HttpContext.Items["Login"] as Login;
+        if (user == null || login == null)
+            return Unauthorized(new { error = "Invalid token." });
+
+        return Ok(new { username = login.Username, role = user.Role.ToString() });
     }
 }
