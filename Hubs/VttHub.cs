@@ -15,6 +15,7 @@ public class VttCounter
     public string Label { get; set; } = "";
     public double X { get; set; }
     public double Y { get; set; }
+    public bool Hidden { get; set; }
 }
 
 public class VttTile
@@ -24,6 +25,7 @@ public class VttTile
     public string Label { get; set; } = "";
     public double X { get; set; }
     public double Y { get; set; }
+    public bool Hidden { get; set; }
 }
 
 public class VttGridSettings
@@ -345,6 +347,28 @@ public class VttHub : Hub
             if (t != null) { t.X = x; t.Y = y; }
         }
         await Clients.Others.SendAsync("TileMoved", id, x, y);
+    }
+
+    public async Task SetTileVisibility(string id, bool hidden)
+    {
+        lock (_lock)
+        {
+            var scene = GetActiveScene();
+            var t = scene?.Tiles.Find(t => t.Id == id);
+            if (t != null) t.Hidden = hidden;
+        }
+        await Clients.Others.SendAsync("TileVisibilityChanged", id, hidden);
+    }
+
+    public async Task SetCounterVisibility(string id, bool hidden)
+    {
+        lock (_lock)
+        {
+            var scene = GetActiveScene();
+            var c = scene?.Counters.Find(c => c.Id == id);
+            if (c != null) c.Hidden = hidden;
+        }
+        await Clients.Others.SendAsync("CounterVisibilityChanged", id, hidden);
     }
 
     public async Task RemoveTile(string id)
