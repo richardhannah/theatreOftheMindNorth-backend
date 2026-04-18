@@ -17,6 +17,15 @@ public class VttCounter
     public double Y { get; set; }
 }
 
+public class VttTile
+{
+    public string Id { get; set; } = "";
+    public string TileId { get; set; } = "";
+    public string Label { get; set; } = "";
+    public double X { get; set; }
+    public double Y { get; set; }
+}
+
 public class VttGridSettings
 {
     public int GridW { get; set; } = 20;
@@ -49,6 +58,7 @@ public class VttScene
     public string MapId { get; set; } = "";
     public VttGridSettings Grid { get; set; } = new();
     public List<VttCounter> Counters { get; set; } = new();
+    public List<VttTile> Tiles { get; set; } = new();
     public VttFogState Fog { get; set; } = new();
 }
 
@@ -99,10 +109,10 @@ public class VttHub : Hub
     {
         if (_loaded) return;
         // Read scenes with raw SQL to bypass Npgsql's jsonb mapping issue
-        var entities = new List<(string SceneId, string Name, string MapId, int GridW, int GridH, double GridOffsetX, double GridOffsetY, string GridColor, double GridOpacity, int GridThickness, string Counters, bool FogEnabled, string FogReveals, bool IsActive)>();
+        var entities = new List<(string SceneId, string Name, string MapId, int GridW, int GridH, double GridOffsetX, double GridOffsetY, string GridColor, double GridOpacity, int GridThickness, string Counters, string Tiles, bool FogEnabled, string FogReveals, bool IsActive)>();
         using (var cmd = db.Database.GetDbConnection().CreateCommand())
         {
-            cmd.CommandText = @"SELECT ""SceneId"", ""Name"", ""MapId"", ""GridW"", ""GridH"", ""GridOffsetX"", ""GridOffsetY"", ""GridColor"", ""GridOpacity"", ""GridThickness"", ""Counters""::text, ""FogEnabled"", ""FogReveals""::text, ""IsActive"" FROM ""VttScenes""";
+            cmd.CommandText = @"SELECT ""SceneId"", ""Name"", ""MapId"", ""GridW"", ""GridH"", ""GridOffsetX"", ""GridOffsetY"", ""GridColor"", ""GridOpacity"", ""GridThickness"", ""Counters""::text, COALESCE(""Tiles""::text, '[]'), ""FogEnabled"", ""FogReveals""::text, ""IsActive"" FROM ""VttScenes""";
             if (cmd.Connection!.State != System.Data.ConnectionState.Open) cmd.Connection.Open();
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
@@ -111,8 +121,8 @@ public class VttHub : Hub
                     reader.GetString(0), reader.GetString(1), reader.GetString(2),
                     reader.GetInt32(3), reader.GetInt32(4), reader.GetDouble(5), reader.GetDouble(6),
                     reader.GetString(7), reader.GetDouble(8), reader.GetInt32(9),
-                    reader.GetString(10), reader.GetBoolean(11), reader.GetString(12),
-                    reader.GetBoolean(13)
+                    reader.GetString(10), reader.GetString(11), reader.GetBoolean(12), reader.GetString(13),
+                    reader.GetBoolean(14)
                 ));
             }
         }
@@ -123,6 +133,12 @@ public class VttHub : Hub
             {
                 try { counters = JsonSerializer.Deserialize<List<VttCounter>>(e.Counters, _jsonOpts) ?? new(); }
                 catch { /* ignore malformed counter data */ }
+            }
+            var tiles = new List<VttTile>();
+            if (!string.IsNullOrEmpty(e.Tiles) && e.Tiles != "[]")
+            {
+                try { tiles = JsonSerializer.Deserialize<List<VttTile>>(e.Tiles, _jsonOpts) ?? new(); }
+                catch { /* ignore malformed tile data */ }
             }
             var fogReveals = new List<VttFogRect>();
             if (!string.IsNullOrEmpty(e.FogReveals) && e.FogReveals != "[]")
@@ -146,6 +162,7 @@ public class VttHub : Hub
                     GridThickness = e.GridThickness,
                 },
                 Counters = counters,
+                Tiles = tiles,
                 Fog = new VttFogState { Enabled = e.FogEnabled, Reveals = fogReveals },
             };
             if (e.IsActive) _state.ActiveSceneId = e.SceneId;
@@ -165,6 +182,7 @@ public class VttHub : Hub
                 GridThickness = 1,
             },
             Counters = _state.Scenes.ContainsKey("default") ? _state.Scenes["default"].Counters : new(),
+            Tiles = _state.Scenes.ContainsKey("default") ? _state.Scenes["default"].Tiles : new(),
         };
         // If no active scene, use default
         if (string.IsNullOrEmpty(_state.ActiveSceneId))
@@ -200,6 +218,7 @@ public class VttHub : Hub
                     scene.MapId,
                     scene.Grid,
                     scene.Counters,
+                    scene.Tiles,
                     fogEnabled = scene.Fog.Enabled,
                     fogReveals = scene.Fog.Reveals,
                 } : null,
@@ -240,6 +259,7 @@ public class VttHub : Hub
                 scene.MapId,
                 scene.Grid,
                 scene.Counters,
+                scene.Tiles,
                 fogEnabled = scene.Fog.Enabled,
                 fogReveals = scene.Fog.Reveals,
             };
@@ -301,6 +321,40 @@ public class VttHub : Hub
             scene?.Counters.RemoveAll(c => c.Id == id);
         }
         await Clients.Others.SendAsync("CounterRemoved", id);
+    }
+
+    // Tile management (DM only - enforced on frontend)
+    public async Task AddTile(VttTile tile)
+    {
+        lock (_lock)
+        {
+            var scene = GetActiveScene();
+            if (scene == null) return;
+            if (scene.Tiles.Any(t => t.Id == tile.Id)) return;
+            scene.Tiles.Add(tile);
+        }
+        await Clients.Others.SendAsync("TileAdded", tile);
+    }
+
+    public async Task MoveTile(string id, double x, double y)
+    {
+        lock (_lock)
+        {
+            var scene = GetActiveScene();
+            var t = scene?.Tiles.Find(t => t.Id == id);
+            if (t != null) { t.X = x; t.Y = y; }
+        }
+        await Clients.Others.SendAsync("TileMoved", id, x, y);
+    }
+
+    public async Task RemoveTile(string id)
+    {
+        lock (_lock)
+        {
+            var scene = GetActiveScene();
+            scene?.Tiles.RemoveAll(t => t.Id == id);
+        }
+        await Clients.Others.SendAsync("TileRemoved", id);
     }
 
     public async Task UpdateGrid(VttGridSettings grid)

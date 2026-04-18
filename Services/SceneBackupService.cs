@@ -46,6 +46,9 @@ public class SceneBackupService : BackgroundService
                     GridOpacity = s.GridOpacity,
                     GridThickness = s.GridThickness,
                     Counters = s.Counters,
+                    Tiles = s.Tiles,
+                    FogEnabled = s.FogEnabled,
+                    FogReveals = s.FogReveals,
                     IsActive = s.IsActive,
                     BackupTimestamp = now,
                 }).ToList();

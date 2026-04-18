@@ -90,6 +90,7 @@ public class ScenesController : ControllerBase
                 GridOpacity = b.GridOpacity,
                 GridThickness = b.GridThickness,
                 Counters = b.Counters,
+                Tiles = b.Tiles,
                 FogEnabled = b.FogEnabled,
                 FogReveals = b.FogReveals,
                 IsActive = b.IsActive,
