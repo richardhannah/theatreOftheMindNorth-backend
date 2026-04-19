@@ -16,6 +16,7 @@ public class VttCounter
     public double X { get; set; }
     public double Y { get; set; }
     public bool Hidden { get; set; }
+    public int Size { get; set; } = 1;
 }
 
 public class VttTile
@@ -369,6 +370,17 @@ public class VttHub : Hub
             if (c != null) c.Hidden = hidden;
         }
         await Clients.Others.SendAsync("CounterVisibilityChanged", id, hidden);
+    }
+
+    public async Task ResizeCounter(string id, int size)
+    {
+        lock (_lock)
+        {
+            var scene = GetActiveScene();
+            var c = scene?.Counters.Find(c => c.Id == id);
+            if (c != null) c.Size = size;
+        }
+        await Clients.Others.SendAsync("CounterResized", id, size);
     }
 
     public async Task RemoveTile(string id)
